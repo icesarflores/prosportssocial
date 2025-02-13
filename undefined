@@ -1,0 +1,8 @@
+import React from "react";
+import Home from "@/components/home";
+
+const MainAppStoryboard = () => {
+  return <Home />;
+};
+
+export default MainAppStoryboard;

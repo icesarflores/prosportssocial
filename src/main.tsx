@@ -5,7 +5,14 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 
 import { TempoDevtools } from "tempo-devtools";
+
+// Initialize Tempo before rendering
 TempoDevtools.init();
+
+// Clear any existing performance entries
+if (window.performance && window.performance.clearResourceTimings) {
+  window.performance.clearResourceTimings();
+}
 
 const basename = import.meta.env.BASE_URL;
 
