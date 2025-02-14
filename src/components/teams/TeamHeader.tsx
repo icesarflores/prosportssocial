@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, Users } from "lucide-react";
 import { useTeams } from "@/hooks/useTeams";
 import { useToast } from "@/components/ui/use-toast";
+import { useTeamNotifications } from "@/hooks/useTeamNotifications";
 import TeamContent from "./TeamContent";
 
 interface TeamHeaderProps {
@@ -21,6 +22,8 @@ interface TeamHeaderProps {
 const TeamHeader = ({ league, team, teamData }: TeamHeaderProps) => {
   const [activeTab, setActiveTab] = useState("feed");
   const { followTeam, unfollowTeam, followedTeams } = useTeams();
+  const { emailNotifications, toggleEmailNotifications } =
+    useTeamNotifications();
   const { toast } = useToast();
   const isFollowing = followedTeams.includes(teamData.id);
 
@@ -83,8 +86,16 @@ const TeamHeader = ({ league, team, teamData }: TeamHeaderProps) => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon">
-              <Bell className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => toggleTeamNotifications(teamData.id)}
+            >
+              {emailNotifications.includes(teamData.id) ? (
+                <Bell className="h-4 w-4 text-blue-500" />
+              ) : (
+                <Bell className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="outline"

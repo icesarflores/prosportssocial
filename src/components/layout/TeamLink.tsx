@@ -15,7 +15,7 @@ export const TeamLink = ({ name, slug, league }: TeamLinkProps) => {
       onClick={() =>
         navigate(`/teams/${league.toLowerCase()}/${slug.toLowerCase()}`)
       }
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm text-sm"
     >
       <img
         src={`/${league.toLowerCase()}/${slug}.svg`}

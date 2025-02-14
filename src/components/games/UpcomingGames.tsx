@@ -47,48 +47,42 @@ const defaultGames: Game[] = [
 
 const UpcomingGames = ({ games = defaultGames }: UpcomingGamesProps) => {
   return (
-    <Card className="w-[320px] bg-white">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Upcoming Games</span>
-          <Button variant="ghost" size="sm" className="p-0">
-            <span className="text-sm text-muted-foreground">View All</span>
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[360px] pr-4">
-          <div className="space-y-4">
-            {games.map((game) => (
-              <Card key={game.id} className="p-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{game.league}</Badge>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <CalendarDays className="mr-1 h-4 w-4" />
-                      {game.date}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{game.homeTeam}</div>
-                    <div className="text-sm text-muted-foreground">vs</div>
-                    <div className="text-sm font-medium">{game.awayTeam}</div>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="mr-1 h-4 w-4" />
-                    {game.time} EST
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    Game Details
-                  </Button>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">Upcoming Games</h3>
+        <Button variant="ghost" size="sm" className="p-0">
+          <span className="text-sm text-muted-foreground">View All</span>
+          <ChevronRight className="ml-1 h-4 w-4" />
+        </Button>
+      </div>
+      <div className="space-y-4">
+        {games.map((game) => (
+          <Card key={game.id} className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Badge variant="secondary">{game.league}</Badge>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <CalendarDays className="mr-1 h-4 w-4" />
+                  {game.date}
                 </div>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">{game.homeTeam}</div>
+                <div className="text-sm text-muted-foreground">vs</div>
+                <div className="text-sm font-medium">{game.awayTeam}</div>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="mr-1 h-4 w-4" />
+                {game.time} EST
+              </div>
+              <Button variant="outline" className="w-full">
+                Game Details
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 };
 

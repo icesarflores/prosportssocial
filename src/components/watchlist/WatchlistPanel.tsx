@@ -123,7 +123,17 @@ const WatchlistPanel = () => {
                   className="flex items-center justify-between p-1 hover:bg-gray-100 rounded cursor-pointer"
                   onClick={() => handleTeamClick(item.id)}
                 >
-                  <span className="text-sm text-gray-900">{item.name}</span>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={
+                        item.logo_url ||
+                        `https://api.dicebear.com/7.x/initials/svg?seed=${item.name}`
+                      }
+                      alt={item.name}
+                      className="w-6 h-6 rounded"
+                    />
+                    <span className="text-sm text-gray-900">{item.name}</span>
+                  </div>
                 </div>
               ))
             )}

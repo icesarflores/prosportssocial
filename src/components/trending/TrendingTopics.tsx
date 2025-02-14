@@ -6,9 +6,9 @@ import { TrendingUp, MessageCircle, Hash } from "lucide-react";
 interface TrendingTopic {
   id: string;
   topic: string;
-  engagement: number;
-  category: string;
-  hashtags: string[];
+  posts: number;
+  category?: string;
+  hashtags?: string[];
 }
 
 interface TrendingTopicsProps {
@@ -19,29 +19,30 @@ const defaultTopics: TrendingTopic[] = [
   {
     id: "1",
     topic: "Lakers vs Warriors Highlights",
-    engagement: 15200,
+    posts: 15200,
     category: "NBA",
     hashtags: ["#LakeShow", "#DubNation"],
   },
   {
     id: "2",
     topic: "Champions League Quarter Finals",
-    engagement: 12800,
+    posts: 12800,
     category: "Soccer",
     hashtags: ["#UCL", "#Football"],
   },
   {
     id: "3",
     topic: "NFL Draft Predictions",
-    engagement: 8900,
+    posts: 8900,
     category: "NFL",
     hashtags: ["#NFLDraft", "#Football"],
   },
 ];
 
-const TrendingTopics: React.FC<TrendingTopicsProps> = ({
-  topics = defaultTopics,
-}) => {
+import { useTrendingTopics } from "@/hooks/useTrendingTopics";
+
+const TrendingTopics: React.FC<TrendingTopicsProps> = () => {
+  const { topics, loading } = useTrendingTopics();
   return (
     <Card className="w-full bg-white dark:bg-gray-800">
       <CardHeader className="flex flex-row items-center gap-2 pb-2">
@@ -66,13 +67,13 @@ const TrendingTopics: React.FC<TrendingTopicsProps> = ({
                     </Badge>
                     <span className="flex items-center gap-1">
                       <MessageCircle className="h-4 w-4" />
-                      {topic.engagement.toLocaleString()}
+                      {topic.posts.toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {topic.hashtags.map((tag) => (
+                {topic.hashtags?.map((tag) => (
                   <span
                     key={tag}
                     className="flex items-center text-sm text-primary hover:text-primary/80 cursor-pointer"

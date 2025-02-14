@@ -24,6 +24,7 @@ export function Comments({ postId, onClose }: CommentsProps) {
 
     await addComment(newComment);
     setNewComment("");
+    onClose(); // Close the modal after posting
   };
 
   return (
@@ -52,7 +53,7 @@ export function Comments({ postId, onClose }: CommentsProps) {
                   />
                 </Avatar>
                 <div className="flex-1">
-                  <div className="bg-gray-100 rounded-lg p-3">
+                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
                     <div className="flex justify-between items-start">
                       <p className="font-medium text-sm">
                         {comment.author?.username || "Anonymous"}

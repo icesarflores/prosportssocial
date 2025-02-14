@@ -4,20 +4,19 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Avatar } from "../ui/avatar";
 import { useToast } from "../ui/use-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import EmojiPicker from "emoji-picker-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { ImageIcon, SmileIcon, AtSign, Hash, X } from "lucide-react";
 
 interface PostComposerProps {
-  onSubmit?: (content: string, media?: File) => void;
+  onSubmit?: (content: string, media?: File) => Promise<void>;
   avatarUrl?: string;
   username?: string;
 }
 
 const PostComposer = ({
-  onSubmit = () => {},
+  onSubmit = async () => {},
   avatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
   username = "sports_fan",
 }: PostComposerProps) => {
@@ -45,10 +44,10 @@ const PostComposer = ({
     }
 
     // Check file type
-    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Error",
-        description: "Please upload an image or video file",
+        description: "Please upload an image file",
         variant: "destructive",
       });
       return;
@@ -56,19 +55,9 @@ const PostComposer = ({
 
     try {
       // Create object URL for preview
-      setMediaPreview(URL.createObjectURL(file));
+      const previewUrl = URL.createObjectURL(file);
+      setMediaPreview(previewUrl);
       setMedia(file);
-
-      // Create object URL for preview
-      setMediaPreview(URL.createObjectURL(file));
-      setMedia(file);
-
-      // Cleanup object URL when component unmounts
-      return () => {
-        if (mediaPreview) {
-          URL.revokeObjectURL(mediaPreview);
-        }
-      };
     } catch (error) {
       console.error("Error uploading file:", error);
       toast({
@@ -93,6 +82,9 @@ const PostComposer = ({
   };
 
   const clearMedia = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview);
+    }
     setMedia(null);
     setMediaPreview("");
     if (fileInputRef.current) {
@@ -113,59 +105,7 @@ const PostComposer = ({
 
     setLoading(true);
     try {
-      await onSubmit(content, media);
-      setContent("");
-      clearMedia();
-      toast({
-        title: "Success",
-        description: "Your post has been published!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-    if (!content.trim() && !media) return;
-    if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to post",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let mediaUrl = null;
-      if (media) {
-        const fileExt = media.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { data, error: uploadError } = await supabase.storage
-          .from("posts")
-          .upload(filePath, media, {
-            cacheControl: "3600",
-            upsert: true,
-            contentType: media.type,
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Get the public URL for the uploaded file
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("posts").getPublicUrl(filePath);
-
-        mediaUrl = publicUrl;
-      }
-
-      await onSubmit(content, media);
+      await onSubmit(content, media || undefined);
       setContent("");
       clearMedia();
       toast({
@@ -184,7 +124,7 @@ const PostComposer = ({
   };
 
   return (
-    <Card className="p-4 bg-white border shadow-sm">
+    <Card className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700">
       <div className="flex gap-4">
         <Avatar className="w-10 h-10">
           <img src={avatarUrl} alt={username} className="object-cover" />
@@ -195,7 +135,7 @@ const PostComposer = ({
             placeholder="What's happening in sports?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[100px] resize-none border-none focus-visible:ring-0 p-2 bg-gray-50"
+            className="min-h-[100px] resize-none border-none focus-visible:ring-0 p-2 bg-gray-50 dark:bg-gray-900"
           />
 
           {mediaPreview && (
@@ -203,7 +143,7 @@ const PostComposer = ({
               <img
                 src={mediaPreview}
                 alt="Preview"
-                className="max-h-[300px] rounded-lg object-contain bg-gray-100"
+                className="max-h-[300px] rounded-lg object-contain bg-gray-100 dark:bg-gray-800"
               />
               <Button
                 variant="ghost"

@@ -5,7 +5,6 @@ import { useAuth } from "@/lib/auth-context";
 export function useLikes(postId: string) {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -14,7 +13,7 @@ export function useLikes(postId: string) {
       getLikesCount();
     }
 
-    const subscription = supabase
+    const channel = supabase
       .channel(`likes:${postId}`)
       .on(
         "postgres_changes",
@@ -31,74 +30,63 @@ export function useLikes(postId: string) {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
     };
   }, [postId, user]);
 
-  async function checkIfLiked() {
+  const checkIfLiked = async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("likes")
         .select("id")
         .eq("post_id", postId)
         .eq("user_id", user?.id)
         .single();
 
-      if (error) throw error;
       setIsLiked(!!data);
     } catch (error) {
       console.error("Error checking like status:", error);
-    } finally {
-      setLoading(false);
     }
-  }
+  };
 
-  async function getLikesCount() {
+  const getLikesCount = async () => {
     try {
-      const { count, error } = await supabase
+      const { count } = await supabase
         .from("likes")
         .select("id", { count: "exact" })
         .eq("post_id", postId);
 
-      if (error) throw error;
       setLikesCount(count || 0);
     } catch (error) {
       console.error("Error getting likes count:", error);
     }
-  }
+  };
 
-  async function toggleLike() {
+  const toggleLike = async () => {
     if (!user) return;
 
     try {
       if (isLiked) {
-        const { error } = await supabase
+        await supabase
           .from("likes")
           .delete()
           .eq("post_id", postId)
           .eq("user_id", user.id);
 
-        if (error) throw error;
         setIsLiked(false);
         setLikesCount((prev) => prev - 1);
       } else {
-        const { error } = await supabase
+        await supabase
           .from("likes")
           .insert([{ post_id: postId, user_id: user.id }]);
 
-        if (error) throw error;
         setIsLiked(true);
         setLikesCount((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error toggling like:", error);
     }
-  }
-
-  return {
-    isLiked,
-    likesCount,
-    loading,
-    toggleLike,
   };
+
+  return { isLiked, likesCount, toggleLike };
 }

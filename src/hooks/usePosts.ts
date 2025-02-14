@@ -30,27 +30,25 @@ export function usePosts(teamId?: string) {
   const { user } = useAuth();
 
   const transformPost = (post: any): Post => {
-    console.log('Transforming post:', post);
     const defaultAuthor = {
-      username: 'anonymous',
+      username: "anonymous",
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`,
-      full_name: 'Anonymous User'
+      full_name: "Anonymous User",
     };
-    
-    const transformedPost = {
+
+    return {
       ...post,
-      profiles: undefined,
-      author: post.profiles?.[0] || defaultAuthor
+      author: {
+        username: post.author?.username || defaultAuthor.username,
+        avatar: post.author?.avatar_url || defaultAuthor.avatar_url,
+        name: post.author?.full_name || defaultAuthor.full_name,
+      },
     };
-    
-    console.log('Transformed post:', transformedPost);
-    return transformedPost;
   };
 
   useEffect(() => {
     fetchPosts();
 
-    // Subscribe to changes
     const channel = supabase
       .channel(`posts-${teamId || "all"}`)
       .on(
@@ -62,30 +60,21 @@ export function usePosts(teamId?: string) {
           filter: teamId ? `team_id=eq.${teamId}` : undefined,
         },
         async (payload) => {
-          console.log('New post received:', payload);
           const { data, error } = await supabase
             .from("posts")
-            .select(`
-              *,
-              profiles (
-                username,
-                avatar_url,
-                full_name
-              )
-            `)
+            .select(`*, author:profiles!posts_user_id_fkey(*)`) // Include profiles in real-time updates
             .eq("id", payload.new.id)
             .single();
 
           if (error) {
-            console.error('Error fetching new post:', error);
+            console.error("Error fetching new post:", error);
             return;
           }
 
           if (data) {
-            console.log('Transformed post:', transformPost(data));
             setPosts((prev) => [transformPost(data), ...prev]);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -97,34 +86,21 @@ export function usePosts(teamId?: string) {
   async function fetchPosts(loadMore = false) {
     if (loadMore && !hasMore) return;
     try {
-      console.log('Fetching posts with teamId:', teamId);
       let query = supabase
         .from("posts")
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url,
-            full_name
-          )
-        `);
+        .select(`*, author:profiles!posts_user_id_fkey(*)`);
 
       if (teamId) {
-        query = query.eq('team_id', teamId);
+        query = query.eq("team_id", teamId);
       }
 
       const { data, error } = await query
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-        
-      if (error) {
-        console.error('Error fetching posts:', error);
-        throw error;
-      }
-      
-      console.log('Raw posts data:', data);
+
+      if (error) throw error;
+
       const transformedPosts = (data || []).map(transformPost);
-      console.log('Transformed posts:', transformedPosts);
 
       if (loadMore) {
         setPosts((prev) => [...prev, ...transformedPosts]);
@@ -134,7 +110,7 @@ export function usePosts(teamId?: string) {
       setHasMore((data || []).length === PAGE_SIZE);
       if (loadMore) setPage((p) => p + 1);
     } catch (error) {
-      console.error("Error details:", error);
+      console.error("Error fetching posts:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -165,13 +141,6 @@ export function usePosts(teamId?: string) {
         mediaUrl = data.publicUrl;
       }
 
-      console.log('Creating post with data:', {
-        content,
-        user_id: user.id,
-        team_id: teamId,
-        image_url: mediaUrl
-      });
-
       const { data: post, error: postError } = await supabase
         .from("posts")
         .insert([
@@ -185,25 +154,12 @@ export function usePosts(teamId?: string) {
             shares: 0,
           },
         ])
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url,
-            full_name
-          )
-        `)
+        .select(`*, author:profiles!posts_user_id_fkey(*)`)
         .single();
 
-      if (postError) {
-        console.error('Error creating post:', postError);
-        throw postError;
-      }
+      if (postError) throw postError;
 
-      console.log('Created post:', post);
       const transformedPost = transformPost(post);
-      console.log('Transformed post:', transformedPost);
-
       setPosts((prev) => [transformedPost, ...prev]);
       return transformedPost;
     } catch (error) {
@@ -244,7 +200,7 @@ export function usePosts(teamId?: string) {
       if (error) throw error;
 
       setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, content } : p))
+        prev.map((p) => (p.id === postId ? { ...p, content } : p)),
       );
     } catch (error) {
       console.error("Error updating post:", error);

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { LogOut, Upload } from "lucide-react";
+import { LogOut, Upload, Moon, Sun } from "lucide-react";
 
 interface Profile {
   username: string;
@@ -193,19 +193,35 @@ export function ProfileSettings() {
             />
           </div>
 
-          <div className="flex justify-between">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={signOut}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Dark Mode</Label>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  document.documentElement.classList.toggle("dark")
+                }
+                className="text-gray-700 dark:text-gray-300"
+              >
+                <Moon className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Sun className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              </Button>
+            </div>
+            <div className="flex justify-between">
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={signOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
           </div>
         </form>
       </Card>

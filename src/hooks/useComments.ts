@@ -22,6 +22,26 @@ export function useComments(postId: string) {
   useEffect(() => {
     fetchComments();
 
+    const channel = supabase
+      .channel(`comments:${postId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "comments",
+          filter: `post_id=eq.${postId}`,
+        },
+        () => {
+          fetchComments();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
     const subscription = supabase
       .channel(`comments:${postId}`)
       .on(

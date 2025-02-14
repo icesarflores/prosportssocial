@@ -11,25 +11,34 @@ export type Database = {
     Tables: {
       articles: {
         Row: {
+          category: string | null
           content: string
           created_at: string | null
           id: string
+          image_url: string | null
+          slug: string | null
           title: string
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          category?: string | null
           content: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
+          slug?: string | null
           title: string
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          category?: string | null
           content?: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
+          slug?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string | null
@@ -67,6 +76,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: []
       }
       hashtags: {
         Row: {
@@ -235,15 +262,7 @@ export type Database = {
           user_id?: string
           video_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "posts_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -293,20 +312,55 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string | null
+          reason: string
+          reporter_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reason: string
+          reporter_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reason?: string
+          reporter_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
-          created_at: string | null
-          id: string
+          description: string | null
+          id: number
           name: string
         }
         Insert: {
-          created_at?: string | null
-          id?: string
+          description?: string | null
+          id?: number
           name: string
         }
         Update: {
-          created_at?: string | null
-          id?: string
+          description?: string | null
+          id?: number
           name?: string
         }
         Relationships: []
@@ -383,6 +437,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string | null
+          blocker_id: string | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -399,22 +474,54 @@ export type Database = {
           role_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      users: {
+        Row: {
+          email: string
+          id: number
+          name: string | null
+        }
+        Insert: {
+          email: string
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          email?: string
+          id?: number
+          name?: string | null
+        }
+        Relationships: []
+      }
+      your_table: {
+        Row: {
+          id: string
+          name: string | null
+        }
+        Insert: {
+          id: string
+          name?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      register_editor: {
+        Args: {
+          email: string
+          password: string
+          username: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

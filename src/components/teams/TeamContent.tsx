@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import MainFeed from "@/components/feed/MainFeed";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,7 +11,8 @@ interface TeamContentProps {
 }
 
 const TeamContent = ({ teamId, activeTab = "feed" }: TeamContentProps) => {
-  const showPostComposer = activeTab === "feed";
+  const { loading } = usePosts(teamId);
+  const showPostComposer = activeTab === "feed" && !loading;
 
   switch (activeTab) {
     case "feed":
