@@ -1,92 +1,107 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
 import CompactProfileCard from "../profile/CompactProfileCard";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "../ui/scroll-area";
 import TrendingTopics from "../trending/TrendingTopics";
+import HashtagCloud from "../hashtags/HashtagCloud";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import UpcomingGames from "../games/UpcomingGames";
-import { TrendingUp, Hash, Calendar } from "lucide-react";
 
 interface RightSidebarProps {
   className?: string;
 }
 
 const RightSidebar = ({ className = "" }: RightSidebarProps) => {
-  return (
-    <div
-      className={`w-full bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}
-    >
-      <div className="space-y-6">
-        <CompactProfileCard />
+  const [popularHashtags, setPopularHashtags] = useState([]);
 
-        {/* Trending Topics */}
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="h-5 w-5 text-blue-500" />
-            <h3 className="font-semibold">Trending Topics</h3>
-          </div>
-          <TrendingTopics />
-        </Card>
+  useEffect(() => {
+    fetchPopularHashtags();
+  }, []);
 
-        {/* Upcoming Games */}
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-green-500" />
-            <h3 className="font-semibold">Upcoming Games</h3>
-          </div>
-          <UpcomingGames />
-          <Button variant="link" className="w-full mt-2">
-            View all games
-          </Button>
-        </Card>
+  const fetchPopularHashtags = async () => {
+    try {
+      const { data } = await supabase
+        .from("post_hashtags")
+        .select("hashtag_id, hashtags(name)")
+        .limit(5);
 
-        {/* Popular Hashtags */}
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Hash className="h-5 w-5 text-purple-500" />
-            <h3 className="font-semibold">Popular Hashtags</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {["#NBA", "#NFL", "#MLB", "#NHL", "#Soccer", "#Tennis"].map(
-              (hashtag) => (
-                <Button
-                  key={hashtag}
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-full"
-                >
-                  {hashtag}
-                </Button>
-              ),
-            )}
-          </div>
-        </Card>
+      const hashtagCounts = data.reduce((acc, curr) => {
+        const name = curr.hashtags.name;
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {});
 
-        {/* Who to Follow */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4">Who to Follow</h3>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`}
-                    alt="User avatar"
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium">Sports Fan {i}</p>
-                    <p className="text-sm text-gray-500">@sportsfan{i}</p>
-                  </div>
+      const formattedHashtags = Object.entries(hashtagCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      setPopularHashtags(formattedHashtags);
+    } catch (error) {
+      console.error("Error fetching popular hashtags:", error);
+    }
+  };
+  const sections = [
+    {
+      title: "PROFILE",
+      content: <CompactProfileCard />,
+    },
+    {
+      title: "TRENDING",
+      content: <TrendingTopics />,
+    },
+    {
+      title: "POPULAR HASHTAGS",
+      content: <HashtagCloud hashtags={popularHashtags} />,
+    },
+    {
+      title: "UPCOMING GAMES",
+      content: <UpcomingGames />,
+    },
+    {
+      title: "WHO TO FOLLOW",
+      content: (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`}
+                  alt="User avatar"
+                  className="w-10 h-10 rounded-full"
+                />
+                <div>
+                  <p className="font-medium">Sports Fan {i}</p>
+                  <p className="text-sm text-gray-500">@sportsfan{i}</p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Follow
-                </Button>
               </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+              <Button variant="outline" size="sm">
+                Follow
+              </Button>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className={`w-full h-full bg-white dark:bg-gray-800 ${className}`}>
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-6">
+          {sections.map((section, i) => (
+            <div key={i} className="space-y-1">
+              <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-3">
+                {section.title}
+              </h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                {section.content}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

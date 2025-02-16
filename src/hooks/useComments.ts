@@ -6,7 +6,10 @@ export interface Comment {
   id: string;
   content: string;
   created_at: string;
+  edited_at?: string;
   user_id: string;
+  parent_id?: string;
+  format_type?: "plain" | "markdown" | "rich";
   author?: {
     username: string;
     avatar_url?: string;
@@ -41,24 +44,6 @@ export function useComments(postId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-
-    const subscription = supabase
-      .channel(`comments:${postId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "comments",
-          filter: `post_id=eq.${postId}`,
-        },
-        fetchComments,
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [postId]);
 
   async function fetchComments() {
@@ -83,19 +68,36 @@ export function useComments(postId: string) {
     }
   }
 
-  async function addComment(content: string) {
+  async function addComment(content: string, parentId?: string) {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from("comments").insert([
-        {
-          content,
-          post_id: postId,
-          user_id: user.id,
-        },
-      ]);
+      const { data, error } = await supabase
+        .from("comments")
+        .insert([
+          {
+            content,
+            post_id: postId,
+            user_id: user.id,
+            parent_id: parentId || null,
+            format_type: "markdown",
+          },
+        ])
+        .select(`*, author:profiles(username, avatar_url, full_name)`)
+        .single();
 
       if (error) throw error;
+
+      // Update local state immediately
+      setComments((prev) => [...prev, data]);
+
+      // Update post comment count
+      const { count } = await supabase
+        .from("comments")
+        .select("*", { count: "exact" })
+        .eq("post_id", postId);
+
+      await supabase.from("posts").update({ comments: count }).eq("id", postId);
     } catch (error) {
       console.error("Error adding comment:", error);
     }
@@ -117,10 +119,31 @@ export function useComments(postId: string) {
     }
   }
 
+  async function updateComment(commentId: string, content: string) {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .update({
+          content,
+          edited_at: new Date().toISOString(),
+        })
+        .eq("id", commentId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      await fetchComments();
+    } catch (error) {
+      console.error("Error updating comment:", error);
+    }
+  }
+
   return {
     comments,
     loading,
     addComment,
     deleteComment,
+    updateComment,
   };
 }

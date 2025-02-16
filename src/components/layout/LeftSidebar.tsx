@@ -1,54 +1,114 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/lib/auth-context";
-import WatchlistPanel from "../watchlist/WatchlistPanel";
-import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
-import { Star } from "lucide-react";
+import {
+  Newspaper,
+  TrendingUp,
+  Bell,
+  Bookmark,
+  Settings,
+  Star,
+} from "lucide-react";
+import WatchlistPanel from "../watchlist/WatchlistPanel";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faFootball,
+  faBaseball,
+  faBasketball,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface LeftSidebarProps {
   className?: string;
 }
 
 const LeftSidebar = ({ className = "" }: LeftSidebarProps) => {
+  const menuItems = [
+    {
+      title: "MAIN",
+      items: [
+        { label: "Home", href: "/home" },
+        {
+          label: "News",
+          href: "/news",
+          icon: <Newspaper className="h-4 w-4" />,
+        },
+        {
+          label: "Trending",
+          href: "/trending",
+          icon: <TrendingUp className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "LEAGUES",
+      items: [
+        {
+          label: "NFL",
+          href: "/nfl",
+          icon: <FontAwesomeIcon icon={faFootball} className="h-4 w-4" />,
+        },
+        {
+          label: "NBA",
+          href: "/nba",
+          icon: <FontAwesomeIcon icon={faBasketball} className="h-4 w-4" />,
+        },
+        {
+          label: "MLB",
+          href: "/mlb",
+          icon: <FontAwesomeIcon icon={faBaseball} className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      title: "PERSONAL",
+      items: [
+        {
+          label: "Notifications",
+          href: "/notifications",
+          icon: <Bell className="h-4 w-4" />,
+        },
+        {
+          label: "Bookmarks",
+          href: "/bookmarks",
+          icon: <Bookmark className="h-4 w-4" />,
+        },
+        {
+          label: "Settings",
+          href: "/settings",
+          icon: <Settings className="h-4 w-4" />,
+        },
+      ],
+    },
+  ];
+
   return (
-    <div
-      className={`w-full h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 ${className}`}
-    >
+    <div className={`w-full h-full bg-white dark:bg-gray-800 ${className}`}>
       <ScrollArea className="h-full">
         <div className="p-4 space-y-6">
-          {/* Watchlist Panel */}
-          <div className="space-y-2">
-            <h3 className="font-semibold px-2 text-gray-800 dark:text-gray-200">
-              Watchlist
-            </h3>
-            <WatchlistPanel />
-          </div>
-
-          {/* Favorite Leagues */}
-          <Card className="p-4">
-            <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">
-              Favorite Leagues
-            </h3>
-            <div className="space-y-2">
-              {[
-                { name: "NFL", path: "/nfl" },
-                { name: "MLB", path: "/mlb" },
-                { name: "NBA", path: "/nba" },
-              ].map((league) => (
-                <Link key={league.path} to={league.path}>
+          {menuItems.map((section, i) => (
+            <div key={i} className="space-y-1">
+              <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-3">
+                {section.title}
+              </h3>
+              {section.items.map((item, j) => (
+                <Link key={j} to={item.href}>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="w-full justify-start gap-3 font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 h-10"
                   >
-                    <Star className="h-4 w-4" />
-                    {league.name}
+                    {item.icon}
+                    {item.label}
                   </Button>
                 </Link>
               ))}
             </div>
-          </Card>
+          ))}
+        </div>
+
+        {/* Watchlist Panel */}
+        <div className="mt-6">
+          <WatchlistPanel />
         </div>
       </ScrollArea>
     </div>

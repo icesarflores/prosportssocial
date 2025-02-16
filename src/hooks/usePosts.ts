@@ -38,48 +38,114 @@ export function usePosts(teamId?: string) {
 
     return {
       ...post,
-      author: {
-        username: post.author?.username || defaultAuthor.username,
-        avatar: post.author?.avatar_url || defaultAuthor.avatar_url,
-        name: post.author?.full_name || defaultAuthor.full_name,
-      },
+      author: post.author || defaultAuthor,
     };
   };
 
   useEffect(() => {
     fetchPosts();
 
-    const channel = supabase
+    // Subscribe to posts changes
+    const postsChannel = supabase
       .channel(`posts-${teamId || "all"}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "posts",
           filter: teamId ? `team_id=eq.${teamId}` : undefined,
         },
         async (payload) => {
+          if (payload.eventType === "DELETE") {
+            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
+            return;
+          }
+
           const { data, error } = await supabase
             .from("posts")
-            .select(`*, author:profiles!posts_user_id_fkey(*)`) // Include profiles in real-time updates
+            .select(`*, author:profiles!posts_user_id_fkey(*)`)
             .eq("id", payload.new.id)
             .single();
 
           if (error) {
-            console.error("Error fetching new post:", error);
+            console.error("Error fetching post:", error);
             return;
           }
 
           if (data) {
-            setPosts((prev) => [transformPost(data), ...prev]);
+            if (payload.eventType === "INSERT") {
+              setPosts((prev) => [transformPost(data), ...prev]);
+            } else if (payload.eventType === "UPDATE") {
+              setPosts((prev) =>
+                prev.map((p) => (p.id === data.id ? transformPost(data) : p)),
+              );
+            }
           }
         },
       )
       .subscribe();
 
+    // Subscribe to likes changes
+    const likesChannel = supabase
+      .channel(`likes-${teamId || "all"}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "likes",
+        },
+        async ({ eventType, new: newRecord, old: oldRecord }) => {
+          const postId = newRecord?.post_id || oldRecord?.post_id;
+          if (!postId) return;
+
+          const { data: likesCount } = await supabase
+            .from("likes")
+            .select("id", { count: "exact" })
+            .eq("post_id", postId);
+
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId ? { ...p, likes: likesCount || 0 } : p,
+            ),
+          );
+        },
+      )
+      .subscribe();
+
+    // Subscribe to comments changes
+    const commentsChannel = supabase
+      .channel(`comments-${teamId || "all"}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "comments",
+        },
+        async ({ eventType, new: newRecord, old: oldRecord }) => {
+          const postId = newRecord?.post_id || oldRecord?.post_id;
+          if (!postId) return;
+
+          const { count: commentsCount } = await supabase
+            .from("comments")
+            .select("*", { count: "exact" })
+            .eq("post_id", postId);
+
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId ? { ...p, comments: commentsCount || 0 } : p,
+            ),
+          );
+        },
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(likesChannel);
+      supabase.removeChannel(commentsChannel);
     };
   }, [teamId]);
 
@@ -124,21 +190,23 @@ export function usePosts(teamId?: string) {
       let mediaUrl = null;
       if (media) {
         const fileExt = media.name.split(".").pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const filePath = `posts/${fileName}`;
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data } = await supabase.storage
           .from("posts")
-          .upload(filePath, media, {
+          .upload(fileName, media, {
             cacheControl: "3600",
-            upsert: true,
             contentType: media.type,
+            upsert: false,
           });
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from("posts").getPublicUrl(filePath);
-        mediaUrl = data.publicUrl;
+        const { data: urlData } = supabase.storage
+          .from("posts")
+          .getPublicUrl(fileName);
+
+        mediaUrl = urlData.publicUrl;
       }
 
       const { data: post, error: postError } = await supabase
@@ -148,6 +216,7 @@ export function usePosts(teamId?: string) {
             content,
             user_id: user.id,
             team_id: teamId,
+            created_at: new Date().toISOString(),
             image_url: mediaUrl,
             likes: 0,
             comments: 0,

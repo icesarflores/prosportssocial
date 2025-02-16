@@ -76,11 +76,17 @@ const SocialFeed = () => {
     (node: HTMLDivElement) => {
       if (loading) return;
       if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          fetchPosts(true);
-        }
-      });
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loading) {
+            fetchPosts(true);
+          }
+        },
+        {
+          rootMargin: "100px", // Load more content before reaching the bottom
+          threshold: 0.1,
+        },
+      );
       if (node) observer.current.observe(node);
     },
     [loading, hasMore, fetchPosts],
@@ -163,7 +169,11 @@ const SocialFeed = () => {
               </div>
             ))}
             {loading && (
-              <div className="text-center py-4">Loading more posts...</div>
+              <div className="flex items-center justify-center py-4 space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+              </div>
             )}
           </div>
         </ScrollArea>

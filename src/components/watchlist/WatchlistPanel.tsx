@@ -6,7 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Star } from "lucide-react";
 import { useTeams } from "@/hooks/useTeams";
 import { supabase } from "@/lib/supabase";
 
@@ -124,14 +124,17 @@ const WatchlistPanel = () => {
                   onClick={() => handleTeamClick(item.id)}
                 >
                   <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        item.logo_url ||
-                        `https://api.dicebear.com/7.x/initials/svg?seed=${item.name}`
-                      }
-                      alt={item.name}
-                      className="w-6 h-6 rounded"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <img
+                        src={
+                          item.logo_url ||
+                          `https://api.dicebear.com/7.x/initials/svg?seed=${item.name}`
+                        }
+                        alt={item.name}
+                        className="w-6 h-6 rounded"
+                      />
+                    </div>
                     <span className="text-sm text-gray-900">{item.name}</span>
                   </div>
                 </div>

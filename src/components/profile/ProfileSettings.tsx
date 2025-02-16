@@ -1,117 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast";
-import { LogOut, Upload, Moon, Sun } from "lucide-react";
 
-interface Profile {
-  username: string;
-  full_name: string;
-  avatar_url?: string;
-  email: string;
-}
+type Section = "general" | "settings" | "account";
 
 export function ProfileSettings() {
+  const [activeSection, setActiveSection] = useState<Section>("general");
   const { user, signOut, updateAvatar } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<Profile>({
-    username: "",
-    full_name: "",
-    avatar_url: "",
+  const [profile, setProfile] = useState({
+    username: user?.user_metadata?.username || "",
     email: user?.email || "",
+    fullName: user?.user_metadata?.full_name || "",
+    bio: user?.user_metadata?.bio || "",
   });
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  async function fetchProfile() {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user?.id)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        setProfile({
-          ...data,
-          email: user?.email || "",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    setLoading(true);
     try {
-      setLoading(true);
-      const url = await updateAvatar(file);
-      setProfile((prev) => ({ ...prev, avatar_url: url }));
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      await updateAvatar(file);
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
+  const handleLogout = async () => {
     try {
-      setLoading(true);
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        username: profile.username,
-        full_name: profile.full_name,
-        avatar_url: profile.avatar_url,
-        updated_at: new Date().toISOString(),
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const handleSave = async (section: Section) => {
+    setLoading(true);
+    try {
+      // Update user metadata
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...user?.user_metadata,
+          ...profile,
+        },
       });
 
       if (error) throw error;
 
-      // Update auth metadata to reflect changes immediately
-      await supabase.auth.updateUser({
-        data: {
-          username: profile.username,
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-        },
-      });
-
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        title: "Success",
+        description: "Profile updated successfully",
       });
-
-      // Refresh profile data
-      await fetchProfile();
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -119,112 +65,131 @@ export function ProfileSettings() {
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label>Avatar</Label>
+  const renderContent = () => {
+    switch (activeSection) {
+      case "general":
+        return (
+          <div className="space-y-6">
             <div className="flex items-center gap-4">
-              <Avatar className="h-[75px] w-[75px]">
-                <img
-                  src={
-                    profile.avatar_url ||
-                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`
-                  }
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                />
-              </Avatar>
-              <div className="flex flex-col gap-2">
+              <img
+                src={
+                  user?.user_metadata?.avatar_url ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`
+                }
+                alt="Profile"
+                className="w-24 h-24 rounded-full"
+              />
+              <div>
                 <input
                   type="file"
-                  id="avatar"
                   accept="image/*"
-                  className="hidden"
                   onChange={handleAvatarUpload}
-                  disabled={loading}
+                  className="hidden"
+                  id="avatar-upload"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("avatar")?.click()}
-                  disabled={loading}
-                  className="flex items-center gap-2"
+                <label
+                  htmlFor="avatar-upload"
+                  className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                  <Upload className="h-4 w-4" />
-                  Upload Avatar
-                </Button>
+                  Change Avatar
+                </label>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold">General Settings</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Display Name
+                </label>
+                <input type="text" className="w-full p-2 border rounded" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Bio</label>
+                <textarea className="w-full p-2 border rounded h-24" />
               </div>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={profile.username}
-              onChange={(e) =>
-                setProfile((prev) => ({ ...prev, username: e.target.value }))
-              }
-              disabled={loading}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              value={profile.full_name}
-              onChange={(e) =>
-                setProfile((prev) => ({ ...prev, full_name: e.target.value }))
-              }
-              disabled={loading}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={profile.email}
-              disabled={true}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Dark Mode</Label>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() =>
-                  document.documentElement.classList.toggle("dark")
-                }
-                className="text-gray-700 dark:text-gray-300"
-              >
-                <Moon className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Sun className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              </Button>
-            </div>
-            <div className="flex justify-between">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={signOut}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
+        );
+      case "settings":
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Account Settings</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Email Notifications
+                </label>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" />
+                  <span>Receive email notifications</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Privacy
+                </label>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" />
+                  <span>Make profile private</span>
+                </div>
+              </div>
             </div>
           </div>
-        </form>
-      </Card>
+        );
+      case "account":
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Account Management</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Change Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full p-2 border rounded"
+                  placeholder="New password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Delete Account
+                </label>
+                <button className="bg-red-500 text-white px-4 py-2 rounded">
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex gap-8">
+        {/* Sidebar */}
+        <Card className="w-64 h-fit p-4 bg-gray-50">
+          <nav className="space-y-1">
+            {[
+              { id: "general", label: "General" },
+              { id: "settings", label: "Settings" },
+              { id: "account", label: "Account" },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id as Section)}
+                className={`w-full text-left px-4 py-2 rounded-md transition-colors ${activeSection === item.id ? "bg-white font-medium text-black" : "text-black hover:bg-white"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </Card>
+
+        {/* Main Content */}
+        <Card className="flex-1 p-6">{renderContent()}</Card>
+      </div>
     </div>
   );
 }

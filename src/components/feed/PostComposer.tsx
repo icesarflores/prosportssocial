@@ -30,31 +30,32 @@ const PostComposer = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "File size must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file type
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    setLoading(true);
     try {
-      // Create object URL for preview
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "File size must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setMediaPreview(previewUrl);
       setMedia(file);
@@ -65,6 +66,8 @@ const PostComposer = ({
         description: "Failed to upload file",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,7 +135,7 @@ const PostComposer = ({
 
         <div className="flex-1">
           <Textarea
-            placeholder="What's happening in sports?"
+            placeholder="What's your sport take today?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[100px] resize-none border-none focus-visible:ring-0 p-2 bg-gray-50 dark:bg-gray-900"

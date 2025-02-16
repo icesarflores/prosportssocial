@@ -47,7 +47,7 @@ const TrendingTopics: React.FC<TrendingTopicsProps> = () => {
     <Card className="w-full bg-white dark:bg-gray-800">
       <CardHeader className="flex flex-row items-center gap-2 pb-2">
         <TrendingUp className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Trending Topics</h2>
+        <h2 className="text-lg font-semibold">What's Trending</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
